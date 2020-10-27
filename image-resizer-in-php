@@ -1,0 +1,42 @@
+public function resize($data)
+    {
+        if (is_file($data['file'])) {
+            // On récupère la taille d'origine de l'image source
+            $pictureSize = getimagesize($data['file']) ;
+
+            // Sauvegarde des tailles originales,
+            // $pictureSize_w et $pictureSize_h vont servir au calcul de la bouvelle taille,
+            // c est sur ces variable que l'on fera l'otération de réduction
+            $pictureSize_w = $pictureSize[0] ;
+            $pictureSize_h = $pictureSize[1] ;
+            
+            // On sauvegarde tout de même la taille d'origine, cela va nous être
+            // utile lors de l'appel à la fonction imagecopyresampled
+            $orig_pictureSize_w = $pictureSize[0] ;
+            $orig_pictureSize_h = $pictureSize[1] ;
+
+            // On boucle tant que l'on est pas arrivé à une taille minimum 
+            // passé en paramètre, pour être certain de ne pas aller trop loin dans
+            // le redimentionnement un ratio de 0.9 est raisonable.
+            while ( $pictureSize_w > $data['width'] || $pictureSize_h > $data['height'] ) {
+               $pictureSize_w = 800 ;
+               $pictureSize_h = 600 ;
+            }
+
+            // On créé l'image source en mémoire
+            $sourceImg = imagecreatefromjpeg($data['file']);
+            // et l'image de destination avec les tailles de la miniature
+            $destImg   = imagecreatetruecolor($pictureSize_w, $pictureSize_h);
+           
+            // On appel la fonction qui va permettrre de redimentionner notre image
+            imagecopyresampled( $destImg, $sourceImg,
+                                0,0,0,0,
+                                $pictureSize_w, $pictureSize_h,
+                                $orig_pictureSize_w, $orig_pictureSize_h );
+
+            // et on la sauve à un endroit donné en paramètre
+            // imagejpeg ($destImg, $destination);
+
+            return $destImg;
+        }
+    }
