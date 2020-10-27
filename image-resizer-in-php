@@ -40,3 +40,116 @@ public function resize($data)
             return $destImg;
         }
     }
+    
+    
+    
+    // SECOND
+    
+    public function resize($data){
+
+        // Verify parameters
+        if (!isset($data['file']) || (!isset($data['width']) && !isset($data['height']))){
+            $this->errors[] = 'Invalid filename or width/height!';
+            return '1';
+        }
+
+        if (!isset($data['output'])){
+            $this->errors[] = 'Invalid output dir!';
+            return '2';
+        }
+        
+        $data['proportional'] = (isset($data['proportional'])) ? $data['proportional'] : true;
+
+        $data['height'] = (isset($data['height'])) ? $data['height'] : 0;
+        $data['width']  = (isset($data['width']))  ? $data['width']  : 0;
+        
+        // if (!is_writable($data['output'])){
+        //     $this->errors[] = 'Output dir is not writable!';
+        //     return '3';
+        // }
+
+        if (!is_file($data['file'])){
+            $this->errors[] = 'Invalid file!';
+            return '4';
+        }
+
+        // if(!$this->_verifyMime($_FILES['image_1'])){
+        //     $this->errors[] = 'Invalid file type!';
+        //     return '5';
+        // }
+        
+        // Validates width and height
+        $width  = (isset($data['width']))  ? (int) $data['width']  : 0;
+        $height = (isset($data['height'])) ? (int) $data['height'] : 0;		
+
+        
+        // Get attributes of image
+        $img = getimagesize($data['file']);
+        $original_width = $img[0];
+        $original_height = $img[1];
+        $mime = $img['mime'];
+
+        $source = ($mime == 'image/png') ? imagecreatefrompng($data['file']) : imagecreatefromjpeg($data['file']);
+        $filename = basename($data['name']);
+        $output = $data['output'] . $filename;
+        
+        // Verify if resize it's necessary
+        if (($width > $original_width || $height > $original_height) && $data['proportional'] === true){
+        
+            $width = $original_width;
+            $height = $original_height;
+        
+        } else {
+            
+            // If width or height not defined, it's necessary calculate proportional size
+            if (!($width > 0 && $height > 0)){
+                
+                // Verify if image is horizontal or vertical
+                if ($original_height > $original_width){
+                    $height = ($data['width'] > 0) ? $data['width'] : $data['height'];
+                    $width  = ($height / $original_height) * $original_width;
+                } else {
+                    $width = ($data['height'] > 0) ? $data['height'] : $data['width']; // 1200
+                    $height = ($width / $original_width) * $original_height; // 795
+                }
+                
+            }
+        
+        }
+        
+        // Generate thumb
+        $thumb = imagecreatetruecolor($width, $height);
+
+        // Add transparency if image is png
+        if ($mime == 'image/png') {
+            imagealphablending($thumb, '6');
+            imagesavealpha($thumb,true);
+            // $transparent = imagecolorallocatealpha($thumb, 0, 0, 0, 0);
+            // imagefilledrectangle($thumb, 0, 0, $width, $height, $transparent);
+            $transparent = imagecolorallocate($thumb, 255, 255, 255);
+            imagefill($thumb, 0, 0, $transparent);
+        } 
+        
+        // Finish image
+        imagecopyresampled($thumb, $source, 0, 0, 0, 0, $width, $height, $width, $height);
+        $finishFunction = $this->_getFinishFunction($mime);
+                    
+        // if (false === $finishFunction) { 
+        //     $this->errors[] = 'Invalid file type.';
+        //     return '7';	
+        // } elseif ($mime == 'image/jpeg' || $mime == 'image/pjpeg') {
+        //     $finishFunction($thumb, WWW_ROOT.'image_offres/'.$output, (int) $this->jpgQuality);
+        // } else {
+        //     $finishFunction($thumb, WWW_ROOT.'image_offres/'.$output);
+        // }
+        
+        return $thumb;
+    }
+    
+    $output = $this->resize([
+        'file' => $_FILES['image_1']['tmp_name'],
+        'name' => $_FILES['image_1']['name'],
+        'width' => 1600,
+        'height' => 1200,
+        'output' => time(). '_'
+    ]);
